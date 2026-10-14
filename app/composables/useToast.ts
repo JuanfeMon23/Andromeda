@@ -1,8 +1,6 @@
 import { addToast, dismissToast } from '../utils/toasts'
 import type { Toast, ToastVariant } from '../utils/toasts'
 
-export type { Toast, ToastVariant }
-
 interface ToastOptions {
   title?: string
   /** Milisegundos; `0` = no se cierra solo. */
