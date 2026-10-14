@@ -19,5 +19,11 @@
   "files": [
     "nuxt.config.ts",
     "app"
-  ]
+  ],
+  "devDependencies": {
+    "vitest": "^5.0.3"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
 }
