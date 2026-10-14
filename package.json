@@ -1,0 +1,13 @@
+{
+  "name": "andromeda",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Capa Nuxt con el sistema de dise\u00c3\u00b1o compartido (Ui*).",
+  "main": "./nuxt.config.ts",
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  },
+  "//peers": "La app debe aportar nuxt, vue, vee-validate, @vee-validate/zod y zod (no se declaran como peer para que pnpm no instale copias duplicadas)."
+}
