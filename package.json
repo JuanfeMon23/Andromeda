@@ -9,5 +9,15 @@
     "@tailwindcss/vite": "^4.3.3",
     "tailwindcss": "^4.3.3"
   },
-  "//peers": "La app debe aportar nuxt, vue, vee-validate, @vee-validate/zod y zod (no se declaran como peer para que pnpm no instale copias duplicadas)."
+  "peerDependencies": {
+    "@vee-validate/zod": "^4.15.1",
+    "nuxt": "^4.5.2",
+    "vee-validate": "^4.15.1",
+    "vue": "^3.5.43",
+    "zod": "~3.25.76"
+  },
+  "files": [
+    "nuxt.config.ts",
+    "app"
+  ]
 }
