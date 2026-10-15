@@ -1,3 +1,5 @@
+import { toUserMessage } from './userMessage'
+
 export interface ApiFormErrors {
   /** Error general (para `UiAlert`); `null` si todo se mapeó a campos. */
   formError: string | null
@@ -12,7 +14,6 @@ export interface MapApiErrorOptions {
   fieldMap?: Record<string, string>
 }
 
-const GENERIC_MESSAGE = 'Ocurrió un error inesperado. Intenta de nuevo.'
 const REQUIRED_MESSAGE = 'Este campo es obligatorio.'
 
 interface NormalizedError {
@@ -61,8 +62,7 @@ function normalize(err: unknown): NormalizedError | null {
 export function mapApiErrorToForm(err: unknown, options: MapApiErrorOptions): ApiFormErrors {
   const normalized = normalize(err)
   if (!normalized) {
-    const message = err instanceof Error && err.message ? err.message : GENERIC_MESSAGE
-    return { formError: message, fieldErrors: {} }
+    return { formError: toUserMessage(err), fieldErrors: {} }
   }
 
   const known = new Set(options.fields)
@@ -96,12 +96,12 @@ export function mapApiErrorToForm(err: unknown, options: MapApiErrorOptions): Ap
     for (const key of Object.keys(record)) {
       if (key === 'missing_fields' || key === 'field') continue
       const field = resolve(key)
-      if (field) fieldErrors[field] = message || GENERIC_MESSAGE
+      if (field) fieldErrors[field] = toUserMessage(err)
     }
     const named = typeof record.field === 'string' ? resolve(record.field) : null
-    if (named) fieldErrors[named] = message || GENERIC_MESSAGE
+    if (named) fieldErrors[named] = toUserMessage(err)
   }
 
   const hasFieldErrors = Object.keys(fieldErrors).length > 0
-  return { formError: hasFieldErrors ? null : message || GENERIC_MESSAGE, fieldErrors }
+  return { formError: hasFieldErrors ? null : toUserMessage(err), fieldErrors }
 }
