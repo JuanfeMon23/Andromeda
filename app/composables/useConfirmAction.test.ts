@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { ApiRequestError } from './useApi'
 import { useConfirmAction } from './useConfirmAction'
 
 describe('useConfirmAction', () => {
@@ -16,10 +15,9 @@ describe('useConfirmAction', () => {
   })
 
   it('si falla deja el modal abierto con el mensaje y el error original (errorCause)', async () => {
-    const failure = new ApiRequestError(
-      { code: 'version_in_use', message: 'No se puede retirar la versión.', details: { lab_test_codes: ['GLU'] } },
-      409
-    )
+    const failure = Object.assign(new Error('No se puede retirar la versión.'), {
+      details: { lab_test_codes: ['GLU'] }
+    })
     const action = useConfirmAction(async () => { throw failure })
     action.ask('v1')
     await action.confirm()
@@ -31,5 +29,22 @@ describe('useConfirmAction', () => {
     action.ask('v2')
     expect(action.error).toBeNull()
     expect(action.errorCause).toBeNull()
+  })
+
+  it('mapError traduce el error; si no devuelve nada, cae al mensaje del error y luego al genérico', async () => {
+    const mapped = useConfirmAction(async () => { throw new Error('raw') }, { mapError: () => 'Legible.' })
+    mapped.ask('x')
+    await mapped.confirm()
+    expect(mapped.error).toBe('Legible.')
+
+    const fallthrough = useConfirmAction(async () => { throw new Error('raw') }, { mapError: () => null })
+    fallthrough.ask('x')
+    await fallthrough.confirm()
+    expect(fallthrough.error).toBe('raw')
+
+    const generic = useConfirmAction(async () => { throw 'boom' }, { errorMessage: 'Falló.' })
+    generic.ask('x')
+    await generic.confirm()
+    expect(generic.error).toBe('Falló.')
   })
 })
