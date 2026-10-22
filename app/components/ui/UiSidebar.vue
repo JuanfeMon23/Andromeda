@@ -1,18 +1,33 @@
 <script setup lang="ts">
 /**
  * Barra lateral de navegación con iconos. Se contrae a solo iconos (estado
- * recordado en este navegador) y en pantallas pequeñas pasa a un cajón que se
- * abre con el botón de menú.
+ * recordado en este navegador) y por debajo de `breakpoint` pasa a un cajón
+ * que se abre con el botón de menú.
  *
  * `items[].icon` es el atributo `d` de un path SVG 24×24 (trazo, sin relleno);
- * `section` agrupa los elementos bajo un título. Emite `update:collapsed` para
- * que la app ajuste el margen de su contenido (`lg:pl-64` / `lg:pl-[4.5rem]`).
+ * `section` agrupa los elementos bajo un título. Casi siempre se usa dentro de
+ * `UiAppShell`, que además reserva el margen del contenido; suelta, el margen
+ * (`<bp>:pl-64` / `<bp>:pl-[4.5rem]`) lo pone la app con `v-model:collapsed`.
+ *
+ * - `breakpoint`: desde cuándo la barra es fija (`md` | `lg` | `xl`; `lg` por defecto).
+ * - `v-model:collapsed` / `v-model:mobile-open`: estado de contracción y del cajón móvil.
+ * - `hide-mobile-bar`: oculta la barra superior móvil propia (la app trae su topbar
+ *   y abre el cajón con `mobile-open`).
+ * - `brandTo`: enlaza la marca (por defecto texto sin enlace).
+ * - Slots: `#brand="{ collapsed }"` (sustituye a la marca), `#footer="{ collapsed }"`.
+ *
+ * El estado contraído se lee de `localStorage` al crearse (en SPA, antes del
+ * primer render) para no parpadear expandido.
  *
  * @example
  * <UiSidebar :items="[{ label: 'Inicio', to: '/', icon: 'M3 12l9-9 9 9M5 10v10h14V10' }]" brand="Incubus">
  *   <template #footer>…</template>
  * </UiSidebar>
  */
+import { computed, onMounted, watch } from 'vue'
+import { SIDEBAR_BREAKPOINT_CLASSES } from '../../utils/sidebarBreakpoints'
+import type { SidebarBreakpoint } from '../../utils/sidebarBreakpoints'
+
 export interface UiSidebarItem {
   label: string
   to: string
@@ -24,30 +39,45 @@ const props = withDefaults(
   defineProps<{
     items: UiSidebarItem[]
     brand?: string
+    /** Enlace de la marca (p. ej. `/`). */
+    brandTo?: string
     /** Clave de `localStorage` donde se recuerda si está contraída. */
     storageKey?: string
+    /** Desde qué ancho la barra es fija; por debajo es un cajón. */
+    breakpoint?: SidebarBreakpoint
+    /** Oculta la barra superior móvil propia. */
+    hideMobileBar?: boolean
   }>(),
-  { brand: '', storageKey: 'andromeda.sidebar.collapsed' }
+  {
+    brand: '',
+    brandTo: undefined,
+    storageKey: 'andromeda.sidebar.collapsed',
+    breakpoint: 'lg',
+    hideMobileBar: false
+  }
 )
 
-const emit = defineEmits<{ 'update:collapsed': [value: boolean] }>()
+const collapsed = defineModel<boolean>('collapsed', { default: false })
+const mobileOpen = defineModel<boolean>('mobileOpen', { default: false })
 
 const route = useRoute()
-const collapsed = ref(false)
-const mobileOpen = ref(false)
+const cls = computed(() => SIDEBAR_BREAKPOINT_CLASSES[props.breakpoint])
 
-onMounted(() => {
+function readStored() {
   try {
     collapsed.value = localStorage.getItem(props.storageKey) === '1'
   } catch {
     /* almacenamiento no disponible */
   }
-  emit('update:collapsed', collapsed.value)
-})
+}
+
+// SPA: se lee ya en el setup, antes del primer render. Con SSR (hidratando) se
+// espera al montaje para no romper la hidratación.
+if (import.meta.client && !useNuxtApp().isHydrating) readStored()
+else onMounted(readStored)
 
 function toggleCollapsed() {
   collapsed.value = !collapsed.value
-  emit('update:collapsed', collapsed.value)
   try {
     localStorage.setItem(props.storageKey, collapsed.value ? '1' : '0')
   } catch {
@@ -74,7 +104,11 @@ const groups = computed(() => {
 
 <template>
   <!-- Barra superior en pantallas pequeñas -->
-  <div class="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-surface px-4 py-2 lg:hidden">
+  <div
+    v-if="!hideMobileBar"
+    class="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-surface px-4 py-2"
+    :class="cls.hideFrom"
+  >
     <button
       type="button"
       class="flex h-9 w-9 items-center justify-center rounded-md hover:bg-default-100"
@@ -85,35 +119,46 @@ const groups = computed(() => {
         <path d="M4 6h16M4 12h16M4 18h16" />
       </svg>
     </button>
-    <span class="font-semibold tracking-tight">{{ brand }}</span>
+    <NuxtLink v-if="brandTo" :to="brandTo" class="font-semibold tracking-tight">{{ brand }}</NuxtLink>
+    <span v-else class="font-semibold tracking-tight">{{ brand }}</span>
   </div>
 
   <!-- Fondo del cajón móvil -->
   <div
     v-if="mobileOpen"
-    class="fixed inset-0 z-40 bg-black/40 lg:hidden"
+    class="fixed inset-0 z-40 bg-black/40"
+    :class="cls.hideFrom"
     aria-hidden="true"
     @click="mobileOpen = false"
   />
 
   <aside
-    class="fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-surface transition-all duration-200 lg:z-30"
+    class="fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-surface transition-all duration-200"
     :class="[
-      collapsed ? 'lg:w-[4.5rem]' : 'lg:w-64',
-      mobileOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 w-64'
+      cls.zFrom,
+      collapsed ? cls.widthCollapsed : cls.widthExpanded,
+      mobileOpen ? 'w-64 translate-x-0' : ['-translate-x-full w-64', cls.translateFrom]
     ]"
     aria-label="Navegación principal"
   >
     <div class="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
-      <slot name="brand">
-        <span class="truncate text-lg font-semibold tracking-tight" :class="collapsed ? 'lg:hidden' : ''">
+      <slot name="brand" :collapsed="collapsed">
+        <NuxtLink
+          v-if="brandTo"
+          :to="brandTo"
+          class="truncate text-lg font-semibold tracking-tight"
+          :class="collapsed ? cls.hiddenFrom : ''"
+        >
+          {{ brand }}
+        </NuxtLink>
+        <span v-else class="truncate text-lg font-semibold tracking-tight" :class="collapsed ? cls.hiddenFrom : ''">
           {{ brand }}
         </span>
       </slot>
       <button
         type="button"
-        class="ml-auto hidden h-8 w-8 items-center justify-center rounded-md text-text-muted hover:bg-default-100 lg:flex"
-        :class="collapsed ? 'mx-auto' : ''"
+        class="ml-auto h-8 w-8 items-center justify-center rounded-md text-text-muted hover:bg-default-100"
+        :class="[cls.flexFrom, collapsed ? 'mx-auto' : '']"
         :aria-label="collapsed ? 'Expandir menú' : 'Contraer menú'"
         @click="toggleCollapsed"
       >
@@ -128,11 +173,11 @@ const groups = computed(() => {
         <p
           v-if="group.section"
           class="px-3 pb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-text-muted"
-          :class="collapsed ? 'lg:hidden' : ''"
+          :class="collapsed ? cls.hiddenFrom : ''"
         >
           {{ group.section }}
         </p>
-        <div v-if="group.section && collapsed" class="mx-3 hidden border-t border-border lg:block" />
+        <div v-if="group.section && collapsed" class="mx-3 border-t border-border" :class="cls.blockFrom" />
         <NuxtLink
           v-for="item in group.items"
           :key="item.to"
@@ -143,7 +188,7 @@ const groups = computed(() => {
             isActive(item.to)
               ? 'bg-primary-50 text-primary-700'
               : 'text-default-700 hover:bg-default-100',
-            collapsed ? 'lg:justify-center' : ''
+            collapsed ? cls.justifyCenterFrom : ''
           ]"
           :aria-current="isActive(item.to) ? 'page' : undefined"
         >
@@ -159,12 +204,12 @@ const groups = computed(() => {
           >
             <path :d="item.icon" />
           </svg>
-          <span class="truncate" :class="collapsed ? 'lg:hidden' : ''">{{ item.label }}</span>
+          <span class="truncate" :class="collapsed ? cls.hiddenFrom : ''">{{ item.label }}</span>
         </NuxtLink>
       </div>
     </nav>
 
-    <div v-if="$slots.footer" class="shrink-0 border-t border-border p-3" :class="collapsed ? 'lg:flex lg:justify-center' : ''">
+    <div v-if="$slots.footer" class="shrink-0 border-t border-border p-3" :class="collapsed ? cls.footerCollapsedFrom : ''">
       <slot name="footer" :collapsed="collapsed" />
     </div>
   </aside>
