@@ -160,3 +160,33 @@ export function toJsonText(value: Record<string, unknown> | null | undefined) {
 export function toSelectOptions<T extends string>(labels: Record<T, string>) {
   return (Object.entries(labels) as [T, string][]).map(([value, label]) => ({ value, label }))
 }
+
+export interface ZRequiredWhenChangedOptions {
+  /** Campo observado (p. ej. `email`). */
+  watch: string
+  /** Campo que pasa a ser obligatorio cuando el observado cambió (p. ej. `current_password`). */
+  require: string
+  /** Valor vigente del campo observado; se lee en cada validación. */
+  current: () => string
+  message: string
+  /** Si devuelve `false` (p. ej. el correo aún no es válido) no se exige. */
+  applies?: (watched: string) => boolean
+}
+
+/**
+ * Esquema de objeto donde `require` es obligatorio solo si `watch` cambió
+ * respecto a `current()` (comparados recortados): p. ej. cambiar el correo
+ * exige la contraseña actual. Envuelve el esquema con `superRefine`.
+ */
+export function zRequiredWhenChanged<S extends z.AnyZodObject>(schema: S, options: ZRequiredWhenChangedOptions) {
+  return schema.superRefine((value, ctx) => {
+    const record = value as Record<string, unknown>
+    const watched = String(record[options.watch] ?? '').trim()
+    if (options.applies && !options.applies(watched)) return
+    if (watched === options.current().trim()) return
+    const required = record[options.require]
+    if (typeof required !== 'string' ? !required : required.length === 0) {
+      ctx.addIssue({ code: 'custom', path: [options.require], message: options.message })
+    }
+  })
+}

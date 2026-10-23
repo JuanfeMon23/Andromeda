@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 import {
   toJsonText,
   toSelectOptions,
@@ -11,7 +12,8 @@ import {
   zRequiredEnum,
   zRequiredId,
   zRequiredNumber,
-  zRequiredText
+  zRequiredText,
+  zRequiredWhenChanged
 } from './zodFields'
 
 function errorOf(result: { success: boolean, error?: { issues: { message: string }[] } }) {
@@ -146,5 +148,41 @@ describe('toSelectOptions', () => {
       { value: 'a', label: 'A' },
       { value: 'b', label: 'B' }
     ])
+  })
+})
+
+describe('zRequiredWhenChanged', () => {
+  const build = (current = 'a@x.co') => zRequiredWhenChanged(
+    z.object({ email: z.string(), current_password: z.string().optional() }),
+    { watch: 'email', require: 'current_password', current: () => current, message: 'Falta la clave.' }
+  )
+
+  it('no exige nada si el campo no cambió (comparado recortado)', () => {
+    expect(build().safeParse({ email: ' a@x.co ' }).success).toBe(true)
+  })
+  it('exige el campo si cambió y está vacío', () => {
+    const r = build().safeParse({ email: 'b@x.co', current_password: '' })
+    expect(r.success).toBe(false)
+    expect(r.success ? null : r.error.issues[0]).toMatchObject({ path: ['current_password'], message: 'Falta la clave.' })
+  })
+  it('acepta si cambió y viene el campo', () => {
+    expect(build().safeParse({ email: 'b@x.co', current_password: 'x' }).success).toBe(true)
+  })
+  it('lee el valor vigente en cada validación', () => {
+    let current = 'a@x.co'
+    const schema = zRequiredWhenChanged(
+      z.object({ email: z.string(), current_password: z.string().optional() }),
+      { watch: 'email', require: 'current_password', current: () => current, message: 'm' }
+    )
+    expect(schema.safeParse({ email: 'b@x.co' }).success).toBe(false)
+    current = 'b@x.co'
+    expect(schema.safeParse({ email: 'b@x.co' }).success).toBe(true)
+  })
+  it('applies=false evita exigirlo (p. ej. correo inválido)', () => {
+    const schema = zRequiredWhenChanged(
+      z.object({ email: z.string(), current_password: z.string().optional() }),
+      { watch: 'email', require: 'current_password', current: () => 'a@x.co', message: 'm', applies: v => v.includes('@') }
+    )
+    expect(schema.safeParse({ email: 'xx' }).success).toBe(true)
   })
 })
