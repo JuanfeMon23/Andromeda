@@ -1,3 +1,4 @@
+import { getCurrentScope, onScopeDispose, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 /**
