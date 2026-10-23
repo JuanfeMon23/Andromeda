@@ -1,13 +1,12 @@
 /**
  * Utilidades de archivos PDF para subir y ver adjuntos (documentos a firmar).
- * El backend recibe el archivo como base64 PURO (sin prefijo `data:`), con tope
- * de 5 MB decodificado.
+ * El backend recibe el archivo como base64 PURO (sin prefijo `data:`); el tope
+ * de tamaño es configurable en el backend, que es quien decide.
  *
  * El base64 es pesado: se genera solo al enviar y se descarta; no se guarda en
  * estado reactivo.
  */
 
-export const PDF_MAX_BYTES = 5 * 1024 * 1024
 export const PDF_CONTENT_TYPE = 'application/pdf'
 
 /** `details.reason` del 422 del backend al subir, y los motivos de la validación en cliente. */
@@ -15,7 +14,7 @@ export type PdfFileReason = 'empty' | 'too_large' | 'invalid_base64' | 'not_pdf'
 
 export const PDF_FILE_ERROR_MESSAGES: Record<PdfFileReason, string> = {
   empty: 'El archivo está vacío.',
-  too_large: 'El archivo supera los 5 MB.',
+  too_large: 'El archivo supera el tamaño máximo permitido.',
   invalid_base64: 'El archivo no se pudo leer correctamente.',
   not_pdf: 'El archivo no es un PDF válido.'
 }
@@ -29,13 +28,17 @@ export function pdfFileErrorMessage(reason: unknown, fallback = 'No se pudo proc
 
 /**
  * Validación en cliente ANTES de enviar: extensión `.pdf` y tipo PDF (o vacío,
- * que algunos navegadores no informan), no vacío y ≤ 5 MB. `null` = válido.
+ * que algunos navegadores no informan), no vacío y, solo si se pasa `maxBytes`, tamaño ≤ `maxBytes`. Sin `maxBytes`
+ * NO se valida el tamaño (lo decide el backend). `null` = válido.
  */
-export function validatePdfFile(file: { name: string, type: string, size: number }): PdfFileReason | null {
+export function validatePdfFile(
+  file: { name: string, type: string, size: number },
+  options: { maxBytes?: number } = {}
+): PdfFileReason | null {
   const isPdf = file.name.toLowerCase().endsWith('.pdf') && (file.type === '' || file.type === PDF_CONTENT_TYPE)
   if (!isPdf) return 'not_pdf'
   if (file.size === 0) return 'empty'
-  if (file.size > PDF_MAX_BYTES) return 'too_large'
+  if (options.maxBytes !== undefined && file.size > options.maxBytes) return 'too_large'
   return null
 }
 
