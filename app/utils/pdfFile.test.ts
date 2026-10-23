@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  PDF_MAX_BYTES,
   base64ToBlob,
   fileToBase64,
   formatFileSize,
@@ -41,9 +40,13 @@ describe('validatePdfFile', () => {
     expect(validatePdfFile(pdf({ size: 0 }))).toBe('empty')
   })
 
-  it('acepta exactamente 5 MB y rechaza un byte más', () => {
-    expect(validatePdfFile(pdf({ size: PDF_MAX_BYTES }))).toBeNull()
-    expect(validatePdfFile(pdf({ size: PDF_MAX_BYTES + 1 }))).toBe('too_large')
+  it('con maxBytes acepta exactamente el tope y rechaza un byte más', () => {
+    expect(validatePdfFile(pdf({ size: 2048 }), { maxBytes: 2048 })).toBeNull()
+    expect(validatePdfFile(pdf({ size: 2049 }), { maxBytes: 2048 })).toBe('too_large')
+  })
+
+  it('sin maxBytes no valida el tamaño (lo decide el backend)', () => {
+    expect(validatePdfFile(pdf({ size: 500 * 1024 * 1024 }))).toBeNull()
   })
 
   it('prioriza el tipo incorrecto sobre el tamaño', () => {
@@ -54,7 +57,7 @@ describe('validatePdfFile', () => {
 describe('pdfFileErrorMessage', () => {
   it.each([
     ['empty', 'El archivo está vacío.'],
-    ['too_large', 'El archivo supera los 5 MB.'],
+    ['too_large', 'El archivo supera el tamaño máximo permitido.'],
     ['invalid_base64', 'El archivo no se pudo leer correctamente.'],
     ['not_pdf', 'El archivo no es un PDF válido.']
   ])('traduce %s', (reason, message) => {
