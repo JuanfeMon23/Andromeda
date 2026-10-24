@@ -7,6 +7,10 @@
  * «antes → después». Todo el estado y las llamadas viven en `useSettingsAdmin`
  * (la capa no conoce HTTP): la app crea el composable y se lo pasa en `admin`.
  *
+ * Sin permiso (`canEditSetting`) la fila muestra el valor como texto de solo
+ * lectura: no se renderizan inputs, switch, «Guardar» ni «Restablecer». El
+ * historial sigue disponible.
+ *
  * Slot `#empty`: contenido cuando no hay ajustes.
  */
 import type { SettingItem } from '../../types/settings'
@@ -146,69 +150,80 @@ const historyUnit = computed(() => props.admin.historyTarget?.unit)
             </div>
 
             <div class="space-y-3">
-              <div v-if="setting.type === 'bool'" class="flex items-center gap-3">
-                <button
-                  :id="fieldId(setting)"
-                  type="button"
-                  role="switch"
-                  :aria-checked="boolDraft(setting)"
-                  :aria-labelledby="`${fieldId(setting)}-title`"
-                  :disabled="!admin.canEditSetting(setting) || admin.saving"
-                  class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  :class="boolDraft(setting) ? 'bg-primary-600' : 'bg-default-300'"
-                  @click="admin.setDraft(setting, !boolDraft(setting))"
-                >
-                  <span
-                    class="inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-150"
-                    :class="boolDraft(setting) ? 'translate-x-5' : 'translate-x-0.5'"
-                  />
-                </button>
-                <span class="text-sm text-text">{{ boolDraft(setting) ? 'Activado' : 'Desactivado' }}</span>
-              </div>
-
-              <UiFormField
-                v-else
-                :field-id="fieldId(setting)"
-                :error="admin.draftErrors[setting.key] ?? undefined"
-              >
-                <div class="flex items-center gap-2">
-                  <UiTextInput
+              <!-- Sin permiso NO se renderizan inputs, switch ni Guardar/Restablecer: solo texto. -->
+              <template v-if="admin.canEditSetting(setting)">
+                <div v-if="setting.type === 'bool'" class="flex items-center gap-3">
+                  <button
                     :id="fieldId(setting)"
-                    :model-value="draftText(setting)"
-                    :type="setting.type === 'str' ? 'text' : 'number'"
-                    :min="setting.min ?? undefined"
-                    :max="setting.max ?? undefined"
-                    :step="setting.type === 'str' ? undefined : numberStep(setting)"
+                    type="button"
+                    role="switch"
+                    :aria-checked="boolDraft(setting)"
+                    :aria-labelledby="`${fieldId(setting)}-title`"
                     :disabled="!admin.canEditSetting(setting) || admin.saving"
-                    :aria-label="setting.description"
-                    @update:model-value="admin.setDraft(setting, $event)"
-                  />
-                  <span v-if="setting.unit" class="shrink-0 text-sm text-text-muted">{{ setting.unit }}</span>
+                    class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    :class="boolDraft(setting) ? 'bg-primary-600' : 'bg-default-300'"
+                    @click="admin.setDraft(setting, !boolDraft(setting))"
+                  >
+                    <span
+                      class="inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-150"
+                      :class="boolDraft(setting) ? 'translate-x-5' : 'translate-x-0.5'"
+                    />
+                  </button>
+                  <span class="text-sm text-text">{{ boolDraft(setting) ? 'Activado' : 'Desactivado' }}</span>
                 </div>
-              </UiFormField>
 
-              <p v-if="admin.lockedReason(setting)" class="text-xs text-text-muted" data-testid="setting-locked">
-                {{ admin.lockedReason(setting) }}
-              </p>
+                <UiFormField
+                  v-else
+                  :field-id="fieldId(setting)"
+                  :error="admin.draftErrors[setting.key] ?? undefined"
+                >
+                  <div class="flex items-center gap-2">
+                    <UiTextInput
+                      :id="fieldId(setting)"
+                      :model-value="draftText(setting)"
+                      :type="setting.type === 'str' ? 'text' : 'number'"
+                      :min="setting.min ?? undefined"
+                      :max="setting.max ?? undefined"
+                      :step="setting.type === 'str' ? undefined : numberStep(setting)"
+                      :disabled="!admin.canEditSetting(setting) || admin.saving"
+                      :aria-label="setting.description"
+                      @update:model-value="admin.setDraft(setting, $event)"
+                    />
+                    <span v-if="setting.unit" class="shrink-0 text-sm text-text-muted">{{ setting.unit }}</span>
+                  </div>
+                </UiFormField>
 
+
+                <div class="flex flex-wrap items-center gap-2">
+                  <UiButton
+                    size="sm"
+                    :disabled="!admin.canEditSetting(setting) || !admin.isDirty(setting)"
+                    data-testid="setting-save"
+                    @click="admin.askSave(setting)"
+                  >
+                    Guardar
+                  </UiButton>
+                  <UiButton
+                    size="sm"
+                    variant="secondary"
+                    :disabled="!admin.canEditSetting(setting) || (admin.isDefault(setting) && !admin.isDirty(setting))"
+                    data-testid="setting-reset"
+                    @click="admin.resetDraft(setting)"
+                  >
+                    Restablecer
+                  </UiButton>
+                </div>
+              </template>
+              <template v-else>
+                <p class="text-sm text-text" data-testid="setting-readonly">
+                  <span class="text-text-muted">Valor actual:</span>
+                  <strong class="font-medium"> {{ formatSettingValue(setting.value, setting.type, setting.unit) }}</strong>
+                </p>
+                <p v-if="admin.lockedReason(setting)" class="text-xs text-text-muted" data-testid="setting-locked">
+                  {{ admin.lockedReason(setting) }}
+                </p>
+              </template>
               <div class="flex flex-wrap items-center gap-2">
-                <UiButton
-                  size="sm"
-                  :disabled="!admin.canEditSetting(setting) || !admin.isDirty(setting)"
-                  data-testid="setting-save"
-                  @click="admin.askSave(setting)"
-                >
-                  Guardar
-                </UiButton>
-                <UiButton
-                  size="sm"
-                  variant="secondary"
-                  :disabled="!admin.canEditSetting(setting) || (admin.isDefault(setting) && !admin.isDirty(setting))"
-                  data-testid="setting-reset"
-                  @click="admin.resetDraft(setting)"
-                >
-                  Restablecer
-                </UiButton>
                 <UiButton
                   size="sm"
                   variant="ghost"

@@ -10,7 +10,14 @@
  * (`<template #general>…</template>`). Los paneles se montan la primera vez
  * que se visitan y luego se ocultan con `v-show`, para no perder su estado
  * (formularios a medio llenar) al cambiar de pestaña.
+ *
+ * SEGURIDAD: con `v-show` el contenido de pestañas ya visitadas sigue en el DOM.
+ * NO usar para contenido condicionado por permiso: la app debe filtrar los
+ * `tabs` (y sus slots) ANTES de pasarlos. Para contenido sensible usar `lazy`:
+ * solo se renderiza (v-if) el panel activo y los demás se desmontan.
  */
+import { shouldRenderPanel } from '../../utils/tabPanel'
+
 export interface UiTab {
   key: string
   label: string
@@ -27,11 +34,14 @@ const props = withDefaults(
     ariaLabel?: string
     /** Pestañas a lo ancho del contenedor. */
     fullWidth?: boolean
+    /** Renderiza solo el panel activo (v-if) y desmonta los demás; pierde su estado. */
+    lazy?: boolean
   }>(),
   {
     variant: 'solid',
     ariaLabel: undefined,
-    fullWidth: false
+    fullWidth: false,
+    lazy: false
   }
 )
 
@@ -150,7 +160,7 @@ function tabClasses(tab: UiTab) {
 
     <template v-for="tab in tabs" :key="tab.key">
       <div
-        v-if="visited.has(tab.key)"
+        v-if="shouldRenderPanel(tab.key, active, visited, lazy)"
         v-show="tab.key === active"
         :id="panelId(tab.key)"
         role="tabpanel"
