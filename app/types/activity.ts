@@ -16,6 +16,9 @@ export interface ActivityEventRead {
   action: ActivityAction
   reason: string | null
   occurred_at: string
+  /** Quién hizo el cambio; opcionales: no todo backend los envía (Leo, Acuarius). */
+  actor_user_id?: string | null
+  actor_username?: string | null
 }
 
 /** Cuerpo parcial de un PATCH que cambia `is_active` (motivo opcional, ≤ 255). */

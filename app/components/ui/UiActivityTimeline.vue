@@ -11,7 +11,7 @@
 import { computed } from 'vue'
 import type { ActivityEntityType, ActivityEventRead, ActivityFetcher } from '../../types/activity'
 import { useActivity } from '../../composables/useActivity'
-import { ACTIVITY_ACTION_LABELS } from '../../utils/activity'
+import { ACTIVITY_ACTION_LABELS, activityActorLabel } from '../../utils/activity'
 import { formatDateTime } from '../../utils/formatDateTime'
 
 const props = withDefaults(
@@ -71,6 +71,9 @@ const shown = computed(() => props.events ?? activity.events)
           <time :datetime="event.occurred_at" class="text-sm text-text-muted">
             {{ formatDateTime(event.occurred_at) }}
           </time>
+          <span v-if="activityActorLabel(event)" class="text-sm text-text-muted">
+            {{ activityActorLabel(event) }}
+          </span>
         </div>
         <p class="mt-1 text-sm" :class="event.reason ? 'text-text' : 'text-text-muted'">
           {{ event.reason || 'Sin motivo.' }}

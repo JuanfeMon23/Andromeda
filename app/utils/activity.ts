@@ -1,10 +1,16 @@
-import type { ActivityAction } from '../types/activity'
+import type { ActivityAction, ActivityEventRead } from '../types/activity'
 import { zOptionalText } from './zodFields'
 
 /** Etiqueta de cada acción del historial de actividad. */
 export const ACTIVITY_ACTION_LABELS: Record<ActivityAction, string> = {
   activated: 'Activado',
   deactivated: 'Desactivado'
+}
+
+/** "por <usuario>" del evento, o null si no hay actor (backend que no lo envía o evento sin usuario). */
+export function activityActorLabel(event: Pick<ActivityEventRead, 'actor_username'>): string | null {
+  const name = event.actor_username
+  return typeof name === 'string' && name !== '' ? `por ${name}` : null
 }
 
 /** Motivo opcional de un cambio de estado (`activity_reason` del PATCH, ≤ 255). */
