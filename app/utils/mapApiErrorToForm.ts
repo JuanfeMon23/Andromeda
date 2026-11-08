@@ -33,12 +33,12 @@ function normalize(err: unknown): NormalizedError | null {
   const obj = err as Record<string, unknown>
   const data = obj.data
   if (data && typeof data === 'object') {
-    const d = data as Record<string, unknown>
-    if ('code' in d || 'message' in d) {
-      return { code: d.code as string, message: d.message as string, details: d.details }
+    const dataObject = data as Record<string, unknown>
+    if ('code' in dataObject || 'message' in dataObject) {
+      return { code: dataObject.code as string, message: dataObject.message as string, details: dataObject.details }
     }
-    if (Array.isArray(d.detail)) {
-      return { code: 'request_validation', message: undefined, details: d.detail }
+    if (Array.isArray(dataObject.detail)) {
+      return { code: 'request_validation', message: undefined, details: dataObject.detail }
     }
   }
   if ('code' in obj || 'details' in obj) {

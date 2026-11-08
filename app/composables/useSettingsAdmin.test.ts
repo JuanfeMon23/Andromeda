@@ -62,32 +62,32 @@ describe('useSettingsAdmin', () => {
     const security = ref(false)
     const { admin } = build({ canEditSecurity: security }, [setting({ requires_security_permission: true })])
     await admin.load()
-    const s = admin.groups[0]!.settings[0]!
-    expect(admin.canEditSetting(s)).toBe(false)
+    const item = admin.groups[0]!.settings[0]!
+    expect(admin.canEditSetting(item)).toBe(false)
     security.value = true
-    expect(admin.canEditSetting(s)).toBe(true)
+    expect(admin.canEditSetting(item)).toBe(true)
   })
 
   it('resetDraft propone el default sin guardar', async () => {
     const { admin, update } = build({}, [setting({ value: 8, default: 5 })])
     await admin.load()
-    const s = admin.groups[0]!.settings[0]!
-    admin.resetDraft(s)
-    expect(admin.draftOf(s)).toBe('5')
-    expect(admin.isDirty(s)).toBe(true)
+    const item = admin.groups[0]!.settings[0]!
+    admin.resetDraft(item)
+    expect(admin.draftOf(item)).toBe('5')
+    expect(admin.isDirty(item)).toBe(true)
     expect(update).not.toHaveBeenCalled()
   })
 
   it('askSave: sin cambios no abre; inválido marca error; válido abre con antes y después', async () => {
     const { admin } = build()
     await admin.load()
-    const s = admin.groups[0]!.settings[0]!
-    expect(admin.askSave(s)).toBe(false)
-    admin.setDraft(s, '99')
-    expect(admin.askSave(s)).toBe(false)
-    expect(admin.draftErrors[s.key]).toContain('Fuera de rango')
-    admin.setDraft(s, '7')
-    expect(admin.askSave(s)).toBe(true)
+    const item = admin.groups[0]!.settings[0]!
+    expect(admin.askSave(item)).toBe(false)
+    admin.setDraft(item, '99')
+    expect(admin.askSave(item)).toBe(false)
+    expect(admin.draftErrors[item.key]).toContain('Fuera de rango')
+    admin.setDraft(item, '7')
+    expect(admin.askSave(item)).toBe(true)
     expect(admin.saveOpen).toBe(true)
     expect(admin.beforeText).toBe('5')
     expect(admin.afterText).toBe('7')
@@ -96,8 +96,8 @@ describe('useSettingsAdmin', () => {
   it('confirmSave exige motivo de 3 a 500', async () => {
     const { admin, update } = build()
     await admin.load()
-    const s = admin.groups[0]!.settings[0]!
-    admin.setDraft(s, '7'); admin.askSave(s)
+    const item = admin.groups[0]!.settings[0]!
+    admin.setDraft(item, '7'); admin.askSave(item)
     admin.reason = 'ab'
     await admin.confirmSave()
     expect(admin.reasonError).toBeTruthy()
@@ -110,8 +110,8 @@ describe('useSettingsAdmin', () => {
   it('confirmSave guarda con expected_version, actualiza y avisa', async () => {
     const { admin, update, notify } = build()
     await admin.load()
-    const s = admin.groups[0]!.settings[0]!
-    admin.setDraft(s, '7'); admin.askSave(s)
+    const item = admin.groups[0]!.settings[0]!
+    admin.setDraft(item, '7'); admin.askSave(item)
     admin.reason = '  Más tolerancia  '
     await admin.confirmSave()
     expect(update).toHaveBeenCalledWith('login.max_attempts', { value: 7, reason: 'Más tolerancia', expected_version: 1 })
@@ -126,8 +126,8 @@ describe('useSettingsAdmin', () => {
       update: async () => { throw { code: 'version_conflict', details: { current_version: 2 } } }
     })
     await admin.load()
-    const s = admin.groups[0]!.settings[0]!
-    admin.setDraft(s, '7'); admin.askSave(s); admin.reason = 'motivo'
+    const item = admin.groups[0]!.settings[0]!
+    admin.setDraft(item, '7'); admin.askSave(item); admin.reason = 'motivo'
     await admin.confirmSave()
     expect(admin.saveOpen).toBe(false)
     expect(notify).toHaveBeenCalledWith('warning', expect.stringContaining('valor vigente'))
@@ -139,8 +139,8 @@ describe('useSettingsAdmin', () => {
       update: async () => { throw { code: 'setting_out_of_range', details: { min: 1, max: 10 } } }
     })
     await admin.load()
-    const s = admin.groups[0]!.settings[0]!
-    admin.setDraft(s, '7'); admin.askSave(s); admin.reason = 'motivo'
+    const item = admin.groups[0]!.settings[0]!
+    admin.setDraft(item, '7'); admin.askSave(item); admin.reason = 'motivo'
     await admin.confirmSave()
     expect(admin.saveOpen).toBe(true)
     expect(admin.saveError).toContain('De 1 a 10')
@@ -150,8 +150,8 @@ describe('useSettingsAdmin', () => {
   it('error desconocido usa mapError', async () => {
     const { admin } = build({ update: async () => { throw new Error('x') }, mapError: () => 'Sin conexión.' })
     await admin.load()
-    const s = admin.groups[0]!.settings[0]!
-    admin.setDraft(s, '7'); admin.askSave(s); admin.reason = 'motivo'
+    const item = admin.groups[0]!.settings[0]!
+    admin.setDraft(item, '7'); admin.askSave(item); admin.reason = 'motivo'
     await admin.confirmSave()
     expect(admin.saveError).toBe('Sin conexión.')
   })

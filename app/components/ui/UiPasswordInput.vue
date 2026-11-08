@@ -28,8 +28,8 @@ const currentValue = computed(() => props.modelValue ?? (ctx?.field?.value.value
 const invalid = computed(() => Boolean(attrs.invalid) || ctx?.invalid.value || false)
 
 // Valor vaciado (reset tras enviar con éxito): la contraseña vuelve a oculta.
-watch(currentValue, (v) => {
-  if (!v) visible.value = false
+watch(currentValue, (current) => {
+  if (!current) visible.value = false
 })
 onBeforeUnmount(() => { visible.value = false })
 

@@ -25,7 +25,7 @@ describe('activeSelectOptions', () => {
   })
 
   it('acepta varios valores actuales y ignora vacíos', () => {
-    expect(activeSelectOptions(items, label, ['b', null, '']).map(o => o.value)).toEqual(['a', 'b', 'c'])
+    expect(activeSelectOptions(items, label, ['b', null, '']).map(option => option.value)).toEqual(['a', 'b', 'c'])
   })
 
   it('un valor actual activo no cambia su etiqueta', () => {

@@ -59,7 +59,7 @@ export function useSettingsAdmin(options: UseSettingsAdminOptions) {
   const drafts = reactive<Record<string, SettingDraft>>({})
   const draftErrors = reactive<Record<string, string | null>>({})
 
-  const isEmpty = computed(() => loaded.value && groups.value.every(g => g.settings.length === 0))
+  const isEmpty = computed(() => loaded.value && groups.value.every(group => group.settings.length === 0))
 
   function messageOf(error: unknown, fallback: string): string {
     return options.mapError?.(error) || settingErrorMessage(error) || fallback
@@ -90,7 +90,7 @@ export function useSettingsAdmin(options: UseSettingsAdminOptions) {
 
   function find(key: string): SettingItem | undefined {
     for (const group of groups.value) {
-      const hit = group.settings.find(s => s.key === key)
+      const hit = group.settings.find(setting => setting.key === key)
       if (hit) return hit
     }
     return undefined
@@ -174,7 +174,7 @@ export function useSettingsAdmin(options: UseSettingsAdminOptions) {
 
   function replace(updated: SettingItem) {
     for (const group of groups.value) {
-      const index = group.settings.findIndex(s => s.key === updated.key)
+      const index = group.settings.findIndex(setting => setting.key === updated.key)
       if (index !== -1) group.settings[index] = updated
     }
     drafts[updated.key] = toDraft(updated)

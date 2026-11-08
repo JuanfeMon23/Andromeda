@@ -18,14 +18,14 @@ function page(items: string[], total = items.length): PaginatedListPage<string> 
 }
 
 function rejected(err: unknown): Promise<never> {
-  const p = Promise.reject(err)
-  p.catch(() => {})
-  return p
+  const rejection = Promise.reject(err)
+  rejection.catch(() => {})
+  return rejection
 }
 
 function deferred<T>() {
-  let resolve!: (v: T) => void
-  const promise = new Promise<T>((r) => { resolve = r })
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolveFn) => { resolve = resolveFn })
   return { promise, resolve }
 }
 
@@ -60,17 +60,17 @@ describe('usePaginatedList', () => {
   })
 
   it('loading es true mientras carga', async () => {
-    const d = deferred<PaginatedListPage<string>>()
-    const { list } = await make(() => d.promise)
+    const pending = deferred<PaginatedListPage<string>>()
+    const { list } = await make(() => pending.promise)
     expect(list.loading.value).toBe(true)
-    d.resolve(page(['a']))
+    pending.resolve(page(['a']))
     await settle()
     expect(list.loading.value).toBe(false)
     expect(list.rows.value).toEqual(['a'])
   })
 
   it('cambiar de página recarga con esa página', async () => {
-    const fetchPage = vi.fn<Fetch>(async ({ page: p }) => page([`fila-${p}`]))
+    const fetchPage = vi.fn<Fetch>(async ({ page: pageNumber }) => page([`fila-${pageNumber}`]))
     const { list } = await make(fetchPage)
     list.page.value = 3
     await settle()
@@ -171,11 +171,11 @@ describe('usePaginatedList', () => {
 
   it('aborta el signal de la petición anterior al recargar', async () => {
     const signals: AbortSignal[] = []
-    const d = deferred<PaginatedListPage<string>>()
+    const pending = deferred<PaginatedListPage<string>>()
     let first = true
     const { list } = await make(async (_p, { signal }) => {
       signals.push(signal)
-      if (first) { first = false; return d.promise }
+      if (first) { first = false; return pending.promise }
       return page(['b'])
     })
     await list.reload()
@@ -185,18 +185,18 @@ describe('usePaginatedList', () => {
   })
 
   it('al destruir el scope aborta la petición en curso y descarta su respuesta', async () => {
-    const d = deferred<PaginatedListPage<string>>()
+    const pending = deferred<PaginatedListPage<string>>()
     let signal!: AbortSignal
-    const { list, scope } = await make(async (_p, ctx) => { signal = ctx.signal; return d.promise })
+    const { list, scope } = await make(async (_page, ctx) => { signal = ctx.signal; return pending.promise })
     scope.stop()
     expect(signal.aborted).toBe(true)
-    d.resolve(page(['tarde']))
+    pending.resolve(page(['tarde']))
     await settle()
     expect(list.rows.value).toEqual([])
   })
 
   it('corrige una página fuera de rango saltando a la última con datos', async () => {
-    const fetchPage = vi.fn<Fetch>(async ({ page: p }) => (p > 2 ? page([], 30) : page([`p${p}`], 30)))
+    const fetchPage = vi.fn<Fetch>(async ({ page: pageNumber }) => (pageNumber > 2 ? page([], 30) : page([`p${pageNumber}`], 30)))
     const { list } = await make(fetchPage, { pageSize: 20 })
     list.page.value = 5
     await settle()
@@ -400,7 +400,7 @@ describe('usePaginatedList: caché inyectable (cache)', () => {
   }
 
   it('volver a una página reciente sale de la caché (sin nueva petición)', async () => {
-    const fetchPage = vi.fn<Fetch>(async ({ page: p }) => page([`p${p}`]))
+    const fetchPage = vi.fn<Fetch>(async ({ page: pageNumber }) => page([`p${pageNumber}`]))
     const { list } = await make(fetchPage, { cache: makeCache('/t-cache').cache })
     list.page.value = 2
     await settle()
@@ -443,26 +443,26 @@ describe('usePaginatedList: caché inyectable (cache)', () => {
   })
 
   it('una invalidación (isFresh = false) hace que volver a la página ya vista recargue', async () => {
-    const fetchPage = vi.fn<Fetch>(async ({ page: p }) => page([`p${p}`]))
-    const c = makeCache('/t-inval')
-    const { list } = await make(fetchPage, { cache: c.cache })
+    const fetchPage = vi.fn<Fetch>(async ({ page: pageNumber }) => page([`p${pageNumber}`]))
+    const cacheHandle = makeCache('/t-inval')
+    const { list } = await make(fetchPage, { cache: cacheHandle.cache })
     list.page.value = 2
     await settle()
-    c.invalidate()
+    cacheHandle.invalidate()
     list.page.value = 1
     await settle()
     expect(fetchPage).toHaveBeenCalledTimes(3)
   })
 
   it('el sello se toma ANTES de pedir: una invalidación durante la petición deja la entrada vieja', async () => {
-    const d = deferred<PaginatedListPage<string>>()
+    const pending = deferred<PaginatedListPage<string>>()
     const fetchPage = vi.fn<Fetch>()
-      .mockImplementationOnce(() => d.promise)
+      .mockImplementationOnce(() => pending.promise)
       .mockImplementation(async () => page(['segunda']))
-    const c = makeCache('/t-stamp')
-    const { list } = await make(fetchPage, { cache: c.cache })
-    c.invalidate()
-    d.resolve(page(['primera']))
+    const cacheHandle = makeCache('/t-stamp')
+    const { list } = await make(fetchPage, { cache: cacheHandle.cache })
+    cacheHandle.invalidate()
+    pending.resolve(page(['primera']))
     await settle()
     list.page.value = 2
     await settle()
@@ -474,17 +474,17 @@ describe('usePaginatedList: caché inyectable (cache)', () => {
 
   it('listados con el mismo scope comparten entradas; clearPaginatedListCache(scope) las descarta', async () => {
     const fetchPage = vi.fn<Fetch>(async () => page(['x']))
-    const c = makeCache('/t-shared')
-    await make(fetchPage, { cache: c.cache })
-    await make(fetchPage, { cache: c.cache })
+    const cacheHandle = makeCache('/t-shared')
+    await make(fetchPage, { cache: cacheHandle.cache })
+    await make(fetchPage, { cache: cacheHandle.cache })
     expect(fetchPage).toHaveBeenCalledTimes(1)
     clearPaginatedListCache('/t-shared')
-    await make(fetchPage, { cache: c.cache })
+    await make(fetchPage, { cache: cacheHandle.cache })
     expect(fetchPage).toHaveBeenCalledTimes(2)
   })
 
   it('sin adaptador no hay caché', async () => {
-    const fetchPage = vi.fn<Fetch>(async ({ page: p }) => page([`p${p}`]))
+    const fetchPage = vi.fn<Fetch>(async ({ page: pageNumber }) => page([`p${pageNumber}`]))
     const { list } = await make(fetchPage)
     list.page.value = 2
     await settle()

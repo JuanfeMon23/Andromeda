@@ -35,7 +35,7 @@ const emit = defineEmits<{
 const generatedId = useId()
 const { controlId, isInvalid, describedBy, value, update, onBlur } = useFormControl<boolean>(
   props,
-  v => emit('update:modelValue', v)
+  nextValue => emit('update:modelValue', nextValue)
 )
 const inputId = computed(() => controlId.value ?? generatedId)
 const checked = computed(() => Boolean(value.value))

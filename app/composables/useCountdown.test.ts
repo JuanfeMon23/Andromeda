@@ -6,25 +6,25 @@ describe('useCountdown', () => {
   afterEach(() => { vi.useRealTimers() })
 
   it('cuenta hacia atrás y llega a 0', () => {
-    const c = useCountdown()
-    c.start(3)
-    expect(c.secondsLeft.value).toBe(3)
+    const countdown = useCountdown()
+    countdown.start(3)
+    expect(countdown.secondsLeft.value).toBe(3)
     vi.advanceTimersByTime(2000)
-    expect(c.secondsLeft.value).toBe(1)
+    expect(countdown.secondsLeft.value).toBe(1)
     vi.advanceTimersByTime(5000)
-    expect(c.secondsLeft.value).toBe(0)
+    expect(countdown.secondsLeft.value).toBe(0)
   })
 
   it('start(null) usa la espera por defecto', () => {
-    const c = useCountdown()
-    c.start(null)
-    expect(c.secondsLeft.value).toBe(60)
+    const countdown = useCountdown()
+    countdown.start(null)
+    expect(countdown.secondsLeft.value).toBe(60)
   })
 
   it('stop() la deja en 0', () => {
-    const c = useCountdown()
-    c.start(10)
-    c.stop()
-    expect(c.secondsLeft.value).toBe(0)
+    const countdown = useCountdown()
+    countdown.start(10)
+    countdown.stop()
+    expect(countdown.secondsLeft.value).toBe(0)
   })
 })

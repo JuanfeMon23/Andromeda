@@ -18,7 +18,7 @@ describe('useActivity', () => {
     const activity = useActivity('units', 'u1', { fetcher })
     await flush()
     expect(fetcher).toHaveBeenCalledWith({ entityType: 'units', entityId: 'u1', page: 1, pageSize: 20 })
-    expect(activity.events.map(e => e.id)).toEqual(['e1'])
+    expect(activity.events.map(event => event.id)).toEqual(['e1'])
     expect(activity.total).toBe(1)
     expect(activity.hasMore).toBe(false)
     expect(activity.loading).toBe(false)
@@ -33,7 +33,7 @@ describe('useActivity', () => {
     expect(activity.hasMore).toBe(true)
     await activity.loadMore()
     expect(fetcher).toHaveBeenLastCalledWith({ entityType: 'units', entityId: 'u1', page: 2, pageSize: 1 })
-    expect(activity.events.map(e => e.id)).toEqual(['e1', 'e2'])
+    expect(activity.events.map(event => event.id)).toEqual(['e1', 'e2'])
     expect(activity.hasMore).toBe(false)
   })
 

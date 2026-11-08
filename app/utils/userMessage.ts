@@ -45,7 +45,7 @@ interface ErrorLike {
 }
 
 function isTechnical(text: string): boolean {
-  return TECHNICAL_PATTERNS.some((p) => p.test(text))
+  return TECHNICAL_PATTERNS.some((pattern) => pattern.test(text))
 }
 
 function statusOf(err: ErrorLike): number | undefined {
@@ -54,17 +54,17 @@ function statusOf(err: ErrorLike): number | undefined {
 
 export function toUserMessage(err: unknown): string {
   if (!err || typeof err !== 'object') return UNKNOWN_MESSAGE
-  const e = err as ErrorLike
-  const status = statusOf(e)
-  const text = typeof e.message === 'string' ? e.message : ''
+  const errorLike = err as ErrorLike
+  const status = statusOf(errorLike)
+  const text = typeof errorLike.message === 'string' ? errorLike.message : ''
 
-  if (e.name === 'TimeoutError' || e.name === 'AbortError' || /timed? ?out/i.test(text)) {
+  if (errorLike.name === 'TimeoutError' || errorLike.name === 'AbortError' || /timed? ?out/i.test(text)) {
     return TIMEOUT_MESSAGE
   }
 
   // Sin respuesta HTTP: caída de red, servidor apagado, CORS, etc.
-  const looksLikeNetwork = NETWORK_PATTERNS.some((p) => p.test(text))
-  if (status === undefined && !e.data && (looksLikeNetwork || e.name === 'FetchError')) {
+  const looksLikeNetwork = NETWORK_PATTERNS.some((pattern) => pattern.test(text))
+  if (status === undefined && !errorLike.data && (looksLikeNetwork || errorLike.name === 'FetchError')) {
     return NETWORK_MESSAGE
   }
 
@@ -74,7 +74,7 @@ export function toUserMessage(err: unknown): string {
     if (status === 403) return 'No tienes permiso para realizar esta acción.'
   }
 
-  const data = e.data
+  const data = errorLike.data
   if (data && typeof data === 'object') {
     if (Array.isArray(data.detail)) return VALIDATION_MESSAGE
     if (typeof data.message === 'string' && data.message.trim() && !isTechnical(data.message)) {
@@ -86,7 +86,7 @@ export function toUserMessage(err: unknown): string {
   if (status === 422) return VALIDATION_MESSAGE
 
   // Error ya normalizado por la app (ApiRequestError: `code` + `message` en español).
-  if (e.code && text && !isTechnical(text) && !looksLikeNetwork) return text
+  if (errorLike.code && text && !isTechnical(text) && !looksLikeNetwork) return text
 
   if (status !== undefined && status >= 400) return UNKNOWN_MESSAGE
   return looksLikeNetwork ? NETWORK_MESSAGE : UNKNOWN_MESSAGE

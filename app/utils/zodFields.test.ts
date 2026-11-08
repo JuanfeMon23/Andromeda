@@ -161,9 +161,9 @@ describe('zRequiredWhenChanged', () => {
     expect(build().safeParse({ email: ' a@x.co ' }).success).toBe(true)
   })
   it('exige el campo si cambió y está vacío', () => {
-    const r = build().safeParse({ email: 'b@x.co', current_password: '' })
-    expect(r.success).toBe(false)
-    expect(r.success ? null : r.error.issues[0]).toMatchObject({ path: ['current_password'], message: 'Falta la clave.' })
+    const result = build().safeParse({ email: 'b@x.co', current_password: '' })
+    expect(result.success).toBe(false)
+    expect(result.success ? null : result.error.issues[0]).toMatchObject({ path: ['current_password'], message: 'Falta la clave.' })
   })
   it('acepta si cambió y viene el campo', () => {
     expect(build().safeParse({ email: 'b@x.co', current_password: 'x' }).success).toBe(true)
@@ -181,7 +181,7 @@ describe('zRequiredWhenChanged', () => {
   it('applies=false evita exigirlo (p. ej. correo inválido)', () => {
     const schema = zRequiredWhenChanged(
       z.object({ email: z.string(), current_password: z.string().optional() }),
-      { watch: 'email', require: 'current_password', current: () => 'a@x.co', message: 'm', applies: v => v.includes('@') }
+      { watch: 'email', require: 'current_password', current: () => 'a@x.co', message: 'm', applies: value => value.includes('@') }
     )
     expect(schema.safeParse({ email: 'xx' }).success).toBe(true)
   })

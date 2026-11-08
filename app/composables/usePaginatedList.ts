@@ -103,8 +103,8 @@ export function clearPaginatedListCache(scope?: string) {
 
 /** `page` de la URL: entero >= 1, o 1. */
 export function parsePageParam(value: unknown): number {
-  const n = typeof value === 'string' ? Number(value) : typeof value === 'number' ? value : NaN
-  return Number.isInteger(n) && n >= 1 ? n : 1
+  const pageNumber = typeof value === 'string' ? Number(value) : typeof value === 'number' ? value : NaN
+  return Number.isInteger(pageNumber) && pageNumber >= 1 ? pageNumber : 1
 }
 
 /**
@@ -165,7 +165,7 @@ export function usePaginatedList<T, S = unknown>(options: UsePaginatedListOption
   }
 
   function keyOf(params: PaginatedListParams) {
-    return `${cache!.scope}\u0000${JSON.stringify([params.page, params.page_size, params.q ?? '', filters.map(f => toValue(f))])}`
+    return `${cache!.scope}\u0000${JSON.stringify([params.page, params.page_size, params.q ?? '', filters.map(filter => toValue(filter))])}`
   }
 
   /** Si la página quedó fuera de rango, salta a la última con datos (el watcher recarga). */

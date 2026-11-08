@@ -26,8 +26,8 @@ const props = withDefaults(
 
 const view = computed(() => errorView(props.error?.statusCode))
 const code = computed(() => {
-  const n = Number(props.error?.statusCode)
-  return Number.isInteger(n) && n >= 400 && n < 600 ? n : null
+  const statusNumber = Number(props.error?.statusCode)
+  return Number.isInteger(statusNumber) && statusNumber >= 400 && statusNumber < 600 ? statusNumber : null
 })
 // 5xx/inesperados interrumpen (alert); 4xx esperados informan (status).
 const isServer = computed(() => code.value === null || code.value >= 500)

@@ -11,11 +11,11 @@ describe('errorView', () => {
     [500, 'Algo salió mal', 'alert', 'reload'],
     [502, 'Algo salió mal', 'alert', 'reload']
   ])('%s', (code, title, icon, kind) => {
-    const v = errorView(code)
-    expect(v.title).toBe(title)
-    expect(v.icon).toBe(icon)
-    expect(v.primaryAction.kind).toBe(kind)
-    expect(v.message && v.hint && v.primaryAction.label).toBeTruthy()
+    const view = errorView(code)
+    expect(view.title).toBe(title)
+    expect(view.icon).toBe(icon)
+    expect(view.primaryAction.kind).toBe(kind)
+    expect(view.message && view.hint && view.primaryAction.label).toBeTruthy()
   })
 
   it.each([undefined, null, 0, 418, Number.NaN, 'abc'])('desconocido %s -> genérico', (code) => {

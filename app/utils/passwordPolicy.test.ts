@@ -9,16 +9,16 @@ const full: PasswordPolicy = {
 
 describe('passwordPolicyChecks', () => {
   it('lista todos los requisitos de la política completa', () => {
-    expect(passwordPolicyChecks('', full).map(c => c.id)).toEqual(['length', 'lower', 'upper', 'digit', 'symbol'])
+    expect(passwordPolicyChecks('', full).map(check => check.id)).toEqual(['length', 'lower', 'upper', 'digit', 'symbol'])
   })
 
   it('omite los requisitos que la política no exige', () => {
     const policy = { ...full, require_symbol: false, require_uppercase: false }
-    expect(passwordPolicyChecks('abc', policy).map(c => c.id)).toEqual(['length', 'lower', 'digit'])
+    expect(passwordPolicyChecks('abc', policy).map(check => check.id)).toEqual(['length', 'lower', 'digit'])
   })
 
   it('cumple cuando la contraseña es fuerte', () => {
-    expect(passwordPolicyChecks('Clave-Segura-2026', full).every(c => c.met)).toBe(true)
+    expect(passwordPolicyChecks('Clave-Segura-2026', full).every(check => check.met)).toBe(true)
   })
 
   it('cuenta la longitud en caracteres, no en unidades UTF-16', () => {
@@ -34,7 +34,7 @@ describe('passwordPolicyChecks', () => {
 
   it('acepta letras y dígitos Unicode (ñ, Á, ٣)', () => {
     const checks = passwordPolicyChecks('ñÁ٣!', { ...full, min_length: 1 })
-    expect(checks.every(c => c.met)).toBe(true)
+    expect(checks.every(check => check.met)).toBe(true)
   })
 })
 
@@ -55,15 +55,15 @@ describe('zPassword', () => {
     expect(schema.safeParse('Clave-Segura-2026').success).toBe(true)
   })
   it('vacío → mensaje de obligatoria', () => {
-    const r = schema.safeParse('')
-    expect(r.success ? null : r.error.issues[0]!.message).toBe('Escribe una contraseña.')
+    const result = schema.safeParse('')
+    expect(result.success ? null : result.error.issues[0]!.message).toBe('Escribe una contraseña.')
   })
   it('no cumple → mensaje de requisitos', () => {
-    const r = schema.safeParse('corta')
-    expect(r.success ? null : r.error.issues[0]!.message).toBe('La contraseña aún no cumple todos los requisitos.')
+    const result = schema.safeParse('corta')
+    expect(result.success ? null : result.error.issues[0]!.message).toBe('La contraseña aún no cumple todos los requisitos.')
   })
   it('permite mensajes propios', () => {
-    const r = zPassword(full, { required: 'Falta', incomplete: 'Débil' }).safeParse('x')
-    expect(r.success ? null : r.error.issues[0]!.message).toBe('Débil')
+    const result = zPassword(full, { required: 'Falta', incomplete: 'Débil' }).safeParse('x')
+    expect(result.success ? null : result.error.issues[0]!.message).toBe('Débil')
   })
 })

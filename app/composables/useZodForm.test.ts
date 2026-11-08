@@ -34,7 +34,7 @@ describe('useZodForm', () => {
   it('conserva la entrada de los controles y envía aunque un campo no renderizado transforme \'\' → null', async () => {
     const schema = z.object({
       name: zOptionalText(),
-      expected_boolean: z.enum(['', 'true', 'false']).optional().transform(v => (v ? v === 'true' : null))
+      expected_boolean: z.enum(['', 'true', 'false']).optional().transform(value => (value ? value === 'true' : null))
     })
     const form = await setupForm(schema, { initialValues: { name: '', expected_boolean: '' } })
     const handler = vi.fn()

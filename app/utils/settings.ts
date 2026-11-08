@@ -25,12 +25,12 @@ export function toDraft(setting: Pick<SettingItem, 'type' | 'value'>, value: Set
 
 /** Rango legible: «De 1 a 100 s», «Mínimo 1», «Máximo 5» o `''` si no hay límites. */
 export function describeRange(min: number | null | undefined, max: number | null | undefined, unit?: string | null): string {
-  const u = unit ? ` ${unit}` : ''
+  const unitSuffix = unit ? ` ${unit}` : ''
   const hasMin = min !== null && min !== undefined
   const hasMax = max !== null && max !== undefined
-  if (hasMin && hasMax) return `De ${min} a ${max}${u}`
-  if (hasMin) return `Mínimo ${min}${u}`
-  if (hasMax) return `Máximo ${max}${u}`
+  if (hasMin && hasMax) return `De ${min} a ${max}${unitSuffix}`
+  if (hasMin) return `Mínimo ${min}${unitSuffix}`
+  if (hasMax) return `Máximo ${max}${unitSuffix}`
   return ''
 }
 
@@ -51,9 +51,9 @@ export function parseDraft(setting: Pick<SettingItem, 'type' | 'min' | 'max' | '
   return { ok: true, value: number }
 }
 
-export function sameValue(a: unknown, b: unknown): boolean {
-  if (typeof a === 'boolean' || typeof b === 'boolean') return (a === true || a === 'true') === (b === true || b === 'true')
-  return String(a) === String(b)
+export function sameValue(left: unknown, right: unknown): boolean {
+  if (typeof left === 'boolean' || typeof right === 'boolean') return (left === true || left === 'true') === (right === true || right === 'true')
+  return String(left) === String(right)
 }
 
 /** «Última modificación: <fecha> por <usuario>», o `''` si nunca se modificó. */
@@ -72,13 +72,13 @@ export interface ApiErrorInfo {
 
 /** Lee `{code, message, details}` de un error normalizado por la app o de `error.data`. */
 export function readApiError(error: unknown): ApiErrorInfo {
-  const e = (error ?? {}) as {
+  const errorShape = (error ?? {}) as {
     code?: unknown, message?: unknown, details?: unknown
     data?: { code?: unknown, message?: unknown, details?: unknown } | null
   }
-  const code = typeof e.code === 'string' ? e.code : typeof e.data?.code === 'string' ? e.data.code : null
-  const message = typeof e.message === 'string' ? e.message : typeof e.data?.message === 'string' ? e.data.message : null
-  const rawDetails = e.details ?? e.data?.details
+  const code = typeof errorShape.code === 'string' ? errorShape.code : typeof errorShape.data?.code === 'string' ? errorShape.data.code : null
+  const message = typeof errorShape.message === 'string' ? errorShape.message : typeof errorShape.data?.message === 'string' ? errorShape.data.message : null
+  const rawDetails = errorShape.details ?? errorShape.data?.details
   const details = rawDetails && typeof rawDetails === 'object' && !Array.isArray(rawDetails)
     ? rawDetails as Record<string, unknown>
     : {}
@@ -88,7 +88,7 @@ export function readApiError(error: unknown): ApiErrorInfo {
 /** Mensaje en español para los errores de `PUT /settings/{key}` (excepto el 409, que recarga). */
 export function settingErrorMessage(error: unknown, setting?: Pick<SettingItem, 'unit'>): string | null {
   const { code, details } = readApiError(error)
-  const num = (v: unknown) => (typeof v === 'number' ? v : null)
+  const num = (candidate: unknown) => (typeof candidate === 'number' ? candidate : null)
   switch (code) {
     case 'setting_out_of_range': {
       const range = describeRange(num(details.min), num(details.max), setting?.unit)

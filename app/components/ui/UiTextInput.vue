@@ -40,7 +40,7 @@ const emit = defineEmits<{
 
 const { controlId, isInvalid, describedBy, value, update, onBlur } = useFormControl<string | number | null>(
   props,
-  v => emit('update:modelValue', String(v ?? ''))
+  nextValue => emit('update:modelValue', String(nextValue ?? ''))
 )
 </script>
 

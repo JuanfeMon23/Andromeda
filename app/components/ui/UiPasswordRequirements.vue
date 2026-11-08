@@ -14,7 +14,7 @@ const props = defineProps<{
 }>()
 
 const checks = computed(() => passwordPolicyChecks(props.password ?? '', props.policy))
-const pending = computed(() => checks.value.filter(c => !c.met).length)
+const pending = computed(() => checks.value.filter(check => !check.met).length)
 const summary = computed(() => {
   if (!props.password) return ''
   if (pending.value === 0) return 'La contraseña cumple todos los requisitos.'

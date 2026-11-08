@@ -39,7 +39,7 @@ export function addToast(
   now = Date.now()
 ): { list: Toast[]; toast: Toast } {
   // Un mensaje idéntico y todavía visible no se duplica (p. ej. reintentos).
-  const duplicate = list.find((t) => t.message === input.message && t.variant === input.variant)
+  const duplicate = list.find((toast) => toast.message === input.message && toast.variant === input.variant)
   if (duplicate) return { list, toast: duplicate }
 
   counter += 1
@@ -56,5 +56,5 @@ export function addToast(
 }
 
 export function dismissToast(list: Toast[], id: string): Toast[] {
-  return list.filter((t) => t.id !== id)
+  return list.filter((toast) => toast.id !== id)
 }

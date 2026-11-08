@@ -22,7 +22,7 @@ const props = defineProps<{
 const statusDot = VERSION_STATUS_DOT_CLASSES
 const formatDate = (value: string | null | undefined) => formatDateTime(value) || null
 
-const sortedVersions = computed(() => [...props.versions].sort((a, b) => b.versionNumber - a.versionNumber))
+const sortedVersions = computed(() => [...props.versions].sort((first, second) => second.versionNumber - first.versionNumber))
 </script>
 
 <template>

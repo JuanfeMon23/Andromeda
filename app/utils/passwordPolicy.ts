@@ -49,7 +49,7 @@ export function passwordPolicyChecks(password: string, policy: PasswordPolicy): 
 
 /** Etiquetas de los requisitos que faltan; `[]` si la contraseña cumple la política. */
 export function passwordPolicyIssues(password: string, policy: PasswordPolicy): string[] {
-  return passwordPolicyChecks(password, policy).filter(c => !c.met).map(c => c.label)
+  return passwordPolicyChecks(password, policy).filter(check => !check.met).map(check => check.label)
 }
 
 export interface ZPasswordMessages {

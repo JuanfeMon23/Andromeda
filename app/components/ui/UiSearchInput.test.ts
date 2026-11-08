@@ -15,7 +15,7 @@ async function mountInput(props: Record<string, unknown> = {}) {
 type Wrapper = Awaited<ReturnType<typeof mountInput>>
 
 const type = (wrapper: Wrapper, value: string) => wrapper.find('input').setValue(value)
-const emitted = (wrapper: Wrapper) => wrapper.emitted('update:modelValue')?.map(e => e[0]) ?? []
+const emitted = (wrapper: Wrapper) => wrapper.emitted('update:modelValue')?.map(emission => emission[0]) ?? []
 const inputValue = (wrapper: Wrapper) => (wrapper.find('input').element as HTMLInputElement).value
 
 describe('UiSearchInput', () => {
